@@ -11,8 +11,8 @@ class BaseConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     FERNET_KEY = os.environ.get('FERNET_KEY')
 
-    # Session security
-    SESSION_COOKIE_SECURE = True
+    # Session security (set to True once TLS is configured)
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
