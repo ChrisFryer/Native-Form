@@ -1,0 +1,79 @@
+/* Native-Form custom styles */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Dashboard summary cards */
+.summary-card {
+    transition: transform 0.15s ease-in-out;
+}
+.summary-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Provider badges */
+.badge-aws {
+    background-color: #ff9900;
+    color: #232f3e;
+}
+.badge-azure {
+    background-color: #0078d4;
+    color: #ffffff;
+}
+
+/* Resource table */
+.resource-table th {
+    white-space: nowrap;
+}
+.resource-table .resource-id {
+    font-family: monospace;
+    font-size: 0.85em;
+}
+
+/* Connection status indicators */
+.status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.status-dot.active { background-color: #198754; }
+.status-dot.inactive { background-color: #dc3545; }
+.status-dot.untested { background-color: #6c757d; }
+
+/* Spinner overlay for async operations */
+.spinner-overlay {
+    position: relative;
+}
+.spinner-overlay .spinner-mask {
+    display: none;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.8);
+    z-index: 10;
+    justify-content: center;
+    align-items: center;
+}
+.spinner-overlay.loading .spinner-mask {
+    display: flex;
+}
+
+/* JSON detail view */
+.json-view {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    font-family: monospace;
+    font-size: 0.85em;
+    max-height: 600px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}

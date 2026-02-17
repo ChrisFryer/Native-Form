@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Default {{ provider|upper }} Credentials - Native-Form{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <span class="badge {{ 'badge-aws' if provider == 'aws' else 'badge-azure' }} me-2">{{ provider|upper }}</span>
+                    Server-wide Default Credentials
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                {% if existing %}
+                <div class="alert alert-info">
+                    Existing default: <strong>{{ existing.name }}</strong>
+                    {% if existing.last_tested %}
+                    (last tested {{ existing.last_tested.strftime('%Y-%m-%d %H:%M') }})
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">{{ form.name.label.text }}</label>
+                        {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), id="name") }}
+                        {% for error in form.name.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {% if provider == 'aws' %}
+                    <div class="mb-3">
+                        <label class="form-label">Access Key ID</label>
+                        {{ form.aws_access_key_id(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Secret Access Key</label>
+                        {{ form.aws_secret_access_key(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Default Region</label>
+                        {{ form.aws_default_region(class="form-select") }}
+                    </div>
+                    {% elif provider == 'azure' %}
+                    <div class="mb-3">
+                        <label class="form-label">Tenant ID</label>
+                        {{ form.tenant_id(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Client ID</label>
+                        {{ form.client_id(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Client Secret</label>
+                        {{ form.client_secret(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Subscription ID</label>
+                        {{ form.subscription_id(class="form-control") }}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                        <a href="{{ url_for('admin.system_settings') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

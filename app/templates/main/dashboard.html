@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Native-Form{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <h2 class="mb-4"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h2>
+
+        <!-- Summary Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card summary-card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="display-6 text-primary">{{ total_connections }}</div>
+                        <div class="text-muted">Connections</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="display-6" style="color: #ff9900;">{{ aws_count }}</div>
+                        <div class="text-muted">AWS Accounts</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="display-6" style="color: #0078d4;">{{ azure_count }}</div>
+                        <div class="text-muted">Azure Subscriptions</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="display-6 text-success">{{ total_resources }}</div>
+                        <div class="text-muted">Resources</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Resource Breakdown -->
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Resources by Type</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if resource_by_type %}
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Resource Type</th>
+                                    <th class="text-end">Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rtype, count in resource_by_type %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary me-1">{{ rtype|replace('_', ' ')|title }}</span>
+                                    </td>
+                                    <td class="text-end"><strong>{{ count }}</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <p class="text-muted text-center py-3">No resources discovered yet.</p>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <a href="{{ url_for('cloud.list_resources') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-arrow-right me-1"></i>View All Resources
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions & Connections -->
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-plug me-2"></i>Connections</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if connections %}
+                        <div class="list-group list-group-flush">
+                            {% for conn in connections %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <span class="badge {{ 'badge-aws' if conn.provider == 'aws' else 'badge-azure' }} me-2">{{ conn.provider|upper }}</span>
+                                    {{ conn.name }}
+                                    {% if conn.is_default %}
+                                    <span class="badge bg-info ms-1">Default</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if conn.last_tested %}
+                                    <span class="status-dot active" title="Tested"></span>
+                                    {% else %}
+                                    <span class="status-dot untested" title="Not tested"></span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted text-center py-3">No connections configured.</p>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <a href="{{ url_for('cloud.list_connections') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-gear me-1"></i>Manage Connections
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_activity %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in recent_activity %}
+                        <tr>
+                            <td>{{ entry.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td><span class="badge bg-secondary">{{ entry.action }}</span></td>
+                            <td>{{ entry.target_type or '' }} {{ entry.details or '' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted text-center py-3">No recent activity.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

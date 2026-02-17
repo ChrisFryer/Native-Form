@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}System Settings - Native-Form{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2 class="mb-4"><i class="bi bi-gear me-2"></i>System Settings</h2>
+
+        <!-- Quick Links -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <a href="{{ url_for('admin.default_aws') }}" class="card text-decoration-none shadow-sm">
+                    <div class="card-body text-center">
+                        <span class="badge badge-aws fs-6 mb-2">AWS</span>
+                        <p class="mb-0 text-muted">Manage Default AWS Credentials</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ url_for('admin.default_azure') }}" class="card text-decoration-none shadow-sm">
+                    <div class="card-body text-center">
+                        <span class="badge badge-azure fs-6 mb-2">Azure</span>
+                        <p class="mb-0 text-muted">Manage Default Azure Credentials</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ url_for('admin.audit_log_view') }}" class="card text-decoration-none shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-journal-text fs-4 text-secondary"></i>
+                        <p class="mb-0 text-muted">View Audit Log</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <h5 class="mb-3">General</h5>
+                    <div class="mb-4 form-check">
+                        {{ form.registration_enabled(class="form-check-input", id="registration_enabled") }}
+                        <label class="form-check-label" for="registration_enabled">Allow self-registration</label>
+                    </div>
+
+                    <hr>
+                    <h5 class="mb-3">LDAP / Active Directory</h5>
+                    <div class="mb-3 form-check">
+                        {{ form.ldap_enabled(class="form-check-input", id="ldap_enabled") }}
+                        <label class="form-check-label" for="ldap_enabled">Enable LDAP authentication</label>
+                    </div>
+                    <div id="ldap-settings">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">LDAP Host</label>
+                                {{ form.ldap_host(class="form-control", placeholder="ldap.example.com") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Port</label>
+                                {{ form.ldap_port(class="form-control") }}
+                            </div>
+                        </div>
+                        <div class="mb-3 mt-2 form-check">
+                            {{ form.ldap_use_ssl(class="form-check-input", id="ldap_use_ssl") }}
+                            <label class="form-check-label" for="ldap_use_ssl">Use SSL (LDAPS)</label>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Base DN</label>
+                            {{ form.ldap_base_dn(class="form-control", placeholder="dc=example,dc=com") }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">User DN</label>
+                            {{ form.ldap_user_dn(class="form-control", placeholder="ou=Users") }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Login Attribute</label>
+                            {{ form.ldap_user_login_attr(class="form-control", placeholder="sAMAccountName") }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bind User DN</label>
+                            {{ form.ldap_bind_user_dn(class="form-control", placeholder="cn=admin,dc=example,dc=com") }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bind Password</label>
+                            {{ form.ldap_bind_user_password(class="form-control") }}
+                            <div class="form-text">Leave blank to keep existing password.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

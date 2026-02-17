@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Cloud Resources - Native-Form{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-11">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-hdd-stack me-2"></i>Cloud Resources</h2>
+            <div class="d-flex gap-2">
+                {% if connections %}
+                <div class="dropdown">
+                    <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-arrow-repeat me-1"></i>Discover
+                    </button>
+                    <ul class="dropdown-menu">
+                        {% for conn in connections %}
+                        <li>
+                            <a class="dropdown-item discover-btn" href="#" data-conn-id="{{ conn.id }}">
+                                <span class="badge {{ 'badge-aws' if conn.provider == 'aws' else 'badge-azure' }} me-1">{{ conn.provider|upper }}</span>
+                                {{ conn.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-download me-1"></i>Export
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('export.export_csv', connection_id=selected_connection or '', resource_type=selected_type or '') }}">Export CSV</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('export.export_json', connection_id=selected_connection or '', resource_type=selected_type or '') }}">Export JSON</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card mb-4">
+            <div class="card-body py-2">
+                <form method="GET" class="row g-2 align-items-center">
+                    <div class="col-auto">
+                        <label class="form-label mb-0 fw-bold">Filter:</label>
+                    </div>
+                    <div class="col-auto">
+                        <select name="provider" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">All Providers</option>
+                            <option value="aws" {{ 'selected' if selected_provider == 'aws' }}>AWS</option>
+                            <option value="azure" {{ 'selected' if selected_provider == 'azure' }}>Azure</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select name="resource_type" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">All Types</option>
+                            {% for rtype, count in type_counts %}
+                            <option value="{{ rtype }}" {{ 'selected' if selected_type == rtype }}>
+                                {{ rtype|replace('_', ' ')|title }} ({{ count }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select name="connection_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">All Connections</option>
+                            {% for conn in connections %}
+                            <option value="{{ conn.id }}" {{ 'selected' if selected_connection == conn.id|string }}>
+                                {{ conn.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% if selected_provider or selected_type or selected_connection %}
+                    <div class="col-auto">
+                        <a href="{{ url_for('cloud.list_resources') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <!-- Discovery status -->
+        <div id="discovery-status" class="alert alert-info d-none">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            <span id="discovery-message">Discovering resources...</span>
+        </div>
+
+        <!-- Resource table -->
+        {% if resources %}
+        <div class="table-responsive">
+            <table class="table table-hover resource-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Type</th>
+                        <th>Name</th>
+                        <th>Resource ID</th>
+                        <th>Region</th>
+                        <th>Discovered</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for resource in resources %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-secondary">{{ resource.resource_type|replace('_', ' ')|title }}</span>
+                        </td>
+                        <td>{{ resource.resource_name or '-' }}</td>
+                        <td class="resource-id">{{ resource.resource_id }}</td>
+                        <td>{{ resource.region or '-' }}</td>
+                        <td>{{ resource.discovered_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <a href="{{ url_for('cloud.resource_detail', resource_id=resource.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>Detail
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="text-muted">{{ resources|length }} resource(s) found</p>
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-cloud-slash display-4"></i>
+            <p class="mt-3">No resources discovered yet. Select a connection and click Discover.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.discover-btn').forEach(btn => {
+    btn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        const connId = this.dataset.connId;
+        const statusDiv = document.getElementById('discovery-status');
+        const msgSpan = document.getElementById('discovery-message');
+
+        statusDiv.classList.remove('d-none', 'alert-success', 'alert-danger');
+        statusDiv.classList.add('alert-info');
+        msgSpan.textContent = 'Discovering resources for ' + this.textContent.trim() + '...';
+
+        try {
+            const resp = await apiPost('/cloud/resources/discover', { connection_id: connId });
+            const data = await resp.json();
+            if (resp.ok) {
+                statusDiv.classList.remove('alert-info');
+                statusDiv.classList.add('alert-success');
+                msgSpan.textContent = data.message;
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                statusDiv.classList.remove('alert-info');
+                statusDiv.classList.add('alert-danger');
+                msgSpan.textContent = 'Discovery failed: ' + (data.message || 'Unknown error');
+            }
+        } catch (e) {
+            statusDiv.classList.remove('alert-info');
+            statusDiv.classList.add('alert-danger');
+            msgSpan.textContent = 'Discovery request failed.';
+        }
+    });
+});
+</script>
+{% endblock %}

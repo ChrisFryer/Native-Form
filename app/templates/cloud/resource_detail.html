@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ resource.resource_name or resource.resource_id }} - Native-Form{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('cloud.list_resources') }}">Resources</a></li>
+                <li class="breadcrumb-item active">{{ resource.resource_name or resource.resource_id }}</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <span class="badge bg-secondary me-2">{{ resource.resource_type|replace('_', ' ')|title }}</span>
+                    {{ resource.resource_name or resource.resource_id }}
+                </h4>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-download me-1"></i>Export
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('export.export_json', resource_id=resource.id) }}">Export JSON</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered mb-4">
+                    <tr>
+                        <th style="width:180px">Resource Type</th>
+                        <td>{{ resource.resource_type }}</td>
+                    </tr>
+                    <tr>
+                        <th>Resource ID</th>
+                        <td class="resource-id">{{ resource.resource_id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Name</th>
+                        <td>{{ resource.resource_name or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Region</th>
+                        <td>{{ resource.region or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Connection</th>
+                        <td>{{ resource.connection.name }} ({{ resource.connection.provider|upper }})</td>
+                    </tr>
+                    <tr>
+                        <th>Discovered At</th>
+                        <td>{{ resource.discovered_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td>
+                    </tr>
+                </table>
+
+                <h5>Raw Data</h5>
+                <div class="json-view">{{ resource.raw_data|tojson(indent=2) }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

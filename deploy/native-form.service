@@ -1,0 +1,27 @@
+[Unit]
+Description=Native-Form Cloud Management Application
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=notify
+User=native-form
+Group=native-form
+WorkingDirectory=/opt/native-form
+EnvironmentFile=/opt/native-form/.env
+ExecStart=/opt/native-form/venv/bin/gunicorn -c /opt/native-form/deploy/gunicorn.conf.py wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/native-form
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

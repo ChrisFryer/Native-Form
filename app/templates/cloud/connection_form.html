@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if editing else 'New' }} {{ provider|upper }} Connection - Native-Form{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <span class="badge {{ 'badge-aws' if provider == 'aws' else 'badge-azure' }} me-2">{{ provider|upper }}</span>
+                    {{ 'Edit' if editing else 'New' }} Connection
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">{{ form.name.label.text }}</label>
+                        {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), id="name", placeholder="e.g. Production AWS") }}
+                        {% for error in form.name.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {% if provider == 'aws' %}
+                    <div class="mb-3">
+                        <label for="aws_access_key_id" class="form-label">{{ form.aws_access_key_id.label.text }}</label>
+                        {{ form.aws_access_key_id(class="form-control" + (" is-invalid" if form.aws_access_key_id.errors else ""), id="aws_access_key_id", placeholder="AKIA...") }}
+                        {% for error in form.aws_access_key_id.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="aws_secret_access_key" class="form-label">{{ form.aws_secret_access_key.label.text }}</label>
+                        {{ form.aws_secret_access_key(class="form-control" + (" is-invalid" if form.aws_secret_access_key.errors else ""), id="aws_secret_access_key") }}
+                        {% for error in form.aws_secret_access_key.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                        {% if editing %}
+                        <div class="form-text">Leave blank to keep existing secret key.</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="aws_default_region" class="form-label">{{ form.aws_default_region.label.text }}</label>
+                        {{ form.aws_default_region(class="form-select", id="aws_default_region") }}
+                    </div>
+
+                    {% elif provider == 'azure' %}
+                    <div class="mb-3">
+                        <label for="tenant_id" class="form-label">{{ form.tenant_id.label.text }}</label>
+                        {{ form.tenant_id(class="form-control" + (" is-invalid" if form.tenant_id.errors else ""), id="tenant_id", placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx") }}
+                        {% for error in form.tenant_id.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="client_id" class="form-label">{{ form.client_id.label.text }}</label>
+                        {{ form.client_id(class="form-control" + (" is-invalid" if form.client_id.errors else ""), id="client_id") }}
+                        {% for error in form.client_id.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="client_secret" class="form-label">{{ form.client_secret.label.text }}</label>
+                        {{ form.client_secret(class="form-control" + (" is-invalid" if form.client_secret.errors else ""), id="client_secret") }}
+                        {% for error in form.client_secret.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                        {% if editing %}
+                        <div class="form-text">Leave blank to keep existing secret.</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="subscription_id" class="form-label">{{ form.subscription_id.label.text }}</label>
+                        {{ form.subscription_id(class="form-control" + (" is-invalid" if form.subscription_id.errors else ""), id="subscription_id") }}
+                        {% for error in form.subscription_id.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if current_user.is_admin %}
+                    <div class="mb-3 form-check">
+                        {{ form.is_default(class="form-check-input", id="is_default") }}
+                        <label class="form-check-label" for="is_default">{{ form.is_default.label.text }}</label>
+                        <div class="form-text">Server defaults are shared with all users.</div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                        <a href="{{ url_for('cloud.list_connections') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

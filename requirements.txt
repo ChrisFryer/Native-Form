@@ -1,0 +1,29 @@
+# Web framework
+Flask==3.1.*
+Flask-SQLAlchemy==3.1.*
+Flask-Migrate==4.0.*
+Flask-Login==0.6.*
+Flask-WTF==1.2.*
+WTForms==3.2.*
+
+# Database
+psycopg2-binary==2.9.*
+SQLAlchemy==2.0.*
+
+# Encryption
+cryptography==44.*
+
+# LDAP
+flask-ldap3-login==0.9.*
+
+# WSGI server
+gunicorn==23.*
+
+# Utilities
+python-dotenv==1.0.*
+email-validator==2.2.*
+
+# Testing
+pytest==8.*
+pytest-flask==1.3.*
+coverage==7.*
