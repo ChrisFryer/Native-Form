@@ -8,12 +8,14 @@ Native-Form is a cloud management application that queries AWS and Azure environ
 
 1. [Getting Started](#getting-started)
 2. [Dashboard](#dashboard)
-3. [Cloud Connections](#cloud-connections)
-4. [Resource Discovery](#resource-discovery)
-5. [Resource Browser](#resource-browser)
-6. [Exporting Data](#exporting-data)
-7. [Administration](#administration)
-8. [Security & Architecture](#security--architecture)
+3. [AWS Credential Setup](#aws-credential-setup)
+4. [Azure Credential Setup](#azure-credential-setup)
+5. [Cloud Connections](#cloud-connections)
+6. [Resource Discovery](#resource-discovery)
+7. [Resource Browser](#resource-browser)
+8. [Exporting Data](#exporting-data)
+9. [Administration](#administration)
+10. [Security & Architecture](#security--architecture)
 
 ---
 
@@ -56,6 +58,158 @@ The dashboard (`/dashboard`) displays:
 - **Resources by Type** -- A breakdown table showing how many of each resource type (EC2 instances, S3 buckets, VMs, etc.) have been discovered.
 - **Connections** -- A list of all connections visible to you (personal and server defaults), with status indicators showing whether each has been tested.
 - **Recent Activity** -- Your last 10 actions (logins, discoveries, exports, etc.) with timestamps.
+
+---
+
+## AWS Credential Setup
+
+Before adding an AWS connection in Native-Form, you need to create an IAM user with programmatic access in your AWS account.
+
+### Step 1: Create an IAM Policy
+
+1. Sign in to the **AWS Management Console** at https://console.aws.amazon.com/.
+2. Navigate to **IAM** > **Policies** > **Create policy**.
+3. Select the **JSON** tab and paste the following policy:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "NativeFormReadOnly",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeInstances",
+                "ec2:DescribeVpcs",
+                "s3:ListAllMyBuckets",
+                "rds:DescribeDBInstances",
+                "lambda:ListFunctions",
+                "iam:ListUsers",
+                "sts:GetCallerIdentity"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+4. Click **Next**.
+5. Name the policy `NativeFormReadOnly` and add a description (e.g. "Read-only access for Native-Form cloud discovery").
+6. Click **Create policy**.
+
+> **Note:** This is a minimal read-only policy. `sts:GetCallerIdentity` is required for the connection test feature. All other actions are used during resource discovery. No write or modify permissions are granted.
+
+### Step 2: Create an IAM User
+
+1. Navigate to **IAM** > **Users** > **Create user**.
+2. Enter a username (e.g. `native-form-service`).
+3. Click **Next**.
+4. Select **Attach policies directly**.
+5. Search for and select the `NativeFormReadOnly` policy you created in Step 1.
+6. Click **Next** > **Create user**.
+
+### Step 3: Generate Access Keys
+
+1. Click on the user you just created to open its detail page.
+2. Go to the **Security credentials** tab.
+3. Under **Access keys**, click **Create access key**.
+4. Select **Third-party service** as the use case.
+5. Acknowledge the recommendation and click **Next**.
+6. Add a description tag (e.g. "Native-Form") and click **Create access key**.
+7. **Copy both values now** -- you will need them when adding the connection in Native-Form:
+   - **Access key ID** (e.g. `AKIAIOSFODNN7EXAMPLE`)
+   - **Secret access key** (e.g. `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`)
+
+> **Important:** The secret access key is only displayed once at creation time. Store it securely. If you lose it, you must delete the access key and create a new one.
+
+### Step 4: Determine Your Region
+
+You need to specify which AWS region to query when creating the connection. Common regions include:
+
+| Region Code | Location |
+|-------------|----------|
+| `us-east-1` | US East (N. Virginia) |
+| `us-west-2` | US West (Oregon) |
+| `eu-west-1` | Europe (Ireland) |
+| `eu-central-1` | Europe (Frankfurt) |
+| `ap-southeast-1` | Asia Pacific (Singapore) |
+| `ap-southeast-2` | Asia Pacific (Sydney) |
+| `ap-northeast-1` | Asia Pacific (Tokyo) |
+
+A full list is available in the AWS documentation at https://docs.aws.amazon.com/general/latest/gr/rg-and-endpoints.html.
+
+> **Note:** Discovery runs against the single region configured on the connection. S3 buckets and IAM users are global resources and will be returned regardless of region. To discover resources across multiple regions, create a separate connection for each region.
+
+### Summary: Values Needed in Native-Form
+
+| Native-Form Field | Where to Find It |
+|--------------------|-----------------|
+| AWS Access Key ID | IAM > Users > your user > Security credentials > Access keys |
+| AWS Secret Access Key | Displayed once at access key creation time |
+| Default Region | Your preferred region code (e.g. `ap-southeast-2`) |
+
+---
+
+## Azure Credential Setup
+
+Before adding an Azure connection in Native-Form, you need to create a service principal (app registration) with read access to your subscription.
+
+### Step 1: Register an Application
+
+1. Sign in to the **Azure Portal** at https://portal.azure.com/.
+2. Navigate to **Microsoft Entra ID** (formerly Azure Active Directory) > **App registrations**.
+3. Click **New registration**.
+4. Enter a name (e.g. `native-form-service`).
+5. Under **Supported account types**, select **Accounts in this organizational directory only**.
+6. Leave **Redirect URI** blank.
+7. Click **Register**.
+8. On the app's overview page, **copy these two values** -- you will need them:
+   - **Application (client) ID** -- a UUID
+   - **Directory (tenant) ID** -- a UUID
+
+### Step 2: Create a Client Secret
+
+1. In your app registration, go to **Certificates & secrets** in the left menu.
+2. Under the **Client secrets** tab, click **New client secret**.
+3. Enter a description (e.g. "Native-Form") and choose an expiry period (6 months, 12 months, or 24 months).
+4. Click **Add**.
+5. **Copy the Value column now** (not the Secret ID column) -- it is only displayed once.
+
+> **Important:** When the client secret expires, resource discovery will stop working until you create a new secret and update the connection in Native-Form. Set a calendar reminder to rotate the secret before it expires.
+
+### Step 3: Find Your Subscription ID
+
+1. In the Azure Portal, navigate to **Subscriptions** (search for it in the top search bar).
+2. Click on the subscription you want Native-Form to query.
+3. **Copy the Subscription ID** shown on the overview page.
+
+> **Note:** If you want to discover resources across multiple subscriptions, create a separate connection for each subscription in Native-Form.
+
+### Step 4: Assign the Reader Role to the Service Principal
+
+The service principal needs permission to read resources in your subscription.
+
+1. Navigate to **Subscriptions** > click on your subscription.
+2. Click **Access control (IAM)** in the left menu.
+3. Click **Add** > **Add role assignment**.
+4. Under the **Role** tab, search for **Reader** and select it.
+5. Click **Next**.
+6. Under the **Members** tab, select **User, group, or service principal**.
+7. Click **Select members**.
+8. Search for your app registration name (e.g. `native-form-service`) and select it.
+9. Click **Select**.
+10. Click **Review + assign** > **Review + assign**.
+
+> **Note:** The **Reader** role grants read-only access to all resources in the subscription. This is the minimum role required for Native-Form's discovery features. No write, modify, or delete permissions are granted.
+
+### Summary: Values Needed in Native-Form
+
+| Native-Form Field | Where to Find It |
+|--------------------|-----------------|
+| Tenant ID | Entra ID > App registrations > your app > Overview > Directory (tenant) ID |
+| Client ID | Entra ID > App registrations > your app > Overview > Application (client) ID |
+| Client Secret | Entra ID > App registrations > your app > Certificates & secrets > Value column |
+| Subscription ID | Subscriptions > your subscription > Overview > Subscription ID |
 
 ---
 
