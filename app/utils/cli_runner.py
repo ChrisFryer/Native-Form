@@ -1,6 +1,8 @@
 import json
 import os
+import shutil
 import subprocess
+import tempfile
 
 from flask import current_app
 
@@ -35,17 +37,33 @@ def run_azure_command(args, credentials, timeout=None):
         timeout = current_app.config['DISCOVERY_TIMEOUT_SECONDS']
 
     az_path = current_app.config['AZ_CLI_PATH']
-    env = _clean_env()
-    env['AZURE_CLIENT_ID'] = credentials['client_id']
-    env['AZURE_CLIENT_SECRET'] = credentials['client_secret']
-    env['AZURE_TENANT_ID'] = credentials['tenant_id']
 
-    cmd = [az_path] + args + [
-        '--subscription', credentials['subscription_id'],
-        '--output', 'json',
-    ]
+    # Azure CLI needs its own config dir for login state.
+    # Use a temp directory so concurrent users don't conflict.
+    az_config_dir = tempfile.mkdtemp(prefix='nf-az-')
+    try:
+        env = _clean_env()
+        env['AZURE_CONFIG_DIR'] = az_config_dir
 
-    return _execute(cmd, env, timeout)
+        # Azure CLI does not authenticate via env vars like AWS.
+        # We must run 'az login --service-principal' first.
+        login_cmd = [
+            az_path, 'login', '--service-principal',
+            '--username', credentials['client_id'],
+            '--password', credentials['client_secret'],
+            '--tenant', credentials['tenant_id'],
+            '--output', 'none',
+        ]
+        _execute(login_cmd, env, timeout=30)
+
+        # Now run the actual command
+        cmd = [az_path] + args + [
+            '--subscription', credentials['subscription_id'],
+            '--output', 'json',
+        ]
+        return _execute(cmd, env, timeout)
+    finally:
+        shutil.rmtree(az_config_dir, ignore_errors=True)
 
 
 def test_aws_connection(credentials):
@@ -58,15 +76,25 @@ def test_aws_connection(credentials):
 
 def test_azure_connection(credentials):
     try:
-        result = run_azure_command(['account', 'show'], credentials, timeout=30)
+        result = run_azure_command(['account', 'show'], credentials, timeout=60)
         return True, result
     except CLIError as e:
         return False, str(e)
 
 
 def _clean_env():
-    safe_keys = ['PATH', 'HOME', 'LANG', 'LC_ALL', 'TERM', 'SYSTEMROOT', 'COMSPEC']
-    return {k: v for k, v in os.environ.items() if k in safe_keys}
+    """Build a restricted environment for CLI subprocesses.
+
+    Strips application secrets but passes through system variables
+    needed for CLI tools to function (Python paths, library paths, locale).
+    """
+    strip_keys = {
+        'SECRET_KEY', 'FERNET_KEY', 'DATABASE_URL', 'FLASK_ENV',
+        'SESSION_COOKIE_SECURE', 'LDAP_BIND_USER_PASSWORD',
+        'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY',
+        'AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET', 'AZURE_TENANT_ID',
+    }
+    return {k: v for k, v in os.environ.items() if k not in strip_keys}
 
 
 def _execute(cmd, env, timeout):
