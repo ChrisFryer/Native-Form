@@ -258,7 +258,7 @@ A green checkmark confirms the credentials are working. If the test fails, an er
 
 ### Editing a Connection
 
-Click the **pencil icon** next to any connection to update its name, credentials, or region. You must re-enter the secret key / client secret when editing (existing secrets are not displayed for security).
+Click the **pencil icon** next to any connection to update its name, credentials, or region. The secret key / client secret must be re-entered each time you edit (existing secrets are never displayed for security).
 
 ### Deleting a Connection
 
@@ -298,7 +298,7 @@ Discovery scans your cloud environment using native CLI commands and caches the 
 | Virtual Machines | `az vm list` |
 | Storage Accounts | `az storage account list` |
 | SQL Servers | `az sql server list` |
-| Functions Apps | `az functionapp list` |
+| Function Apps | `az functionapp list` |
 | Virtual Networks | `az network vnet list` |
 | Resource Groups | `az group list` |
 
@@ -306,7 +306,7 @@ Discovery scans your cloud environment using native CLI commands and caches the 
 
 - Each discovery run **replaces** the previously cached resources for that connection (old data is cleared before new results are stored).
 - Credentials are decrypted in-memory only for the duration of the CLI call, then discarded.
-- CLI commands are executed securely using argument lists (never shell execution), with credentials passed via environment variables.
+- CLI commands are executed securely using argument lists (never shell execution). AWS credentials are passed via environment variables. Azure uses a temporary `az login --service-principal` session with an isolated config directory per call.
 - A configurable timeout (default 120 seconds) applies to each CLI command.
 
 ---
@@ -437,7 +437,8 @@ The log is paginated (50 entries per page) and ordered newest-first. Audit entri
 - Cloud credentials are **encrypted at rest** using Fernet symmetric encryption before being stored in the database.
 - The encryption key (`FERNET_KEY`) is loaded from an environment variable and never stored in the database or source code.
 - Credentials are **decrypted only in-memory** when needed for CLI execution, then immediately discarded.
-- Credentials are passed to CLI commands via **environment variables**, never as command-line arguments (which would be visible in process listings).
+- **AWS** credentials are passed to CLI commands via **environment variables**, keeping them out of process listings.
+- **Azure** authentication uses a temporary `az login --service-principal` session with an isolated config directory that is deleted after each command completes.
 
 ### Authentication & Sessions
 
@@ -449,7 +450,7 @@ The log is paginated (50 entries per page) and ordered newest-first. Audit entri
 ### CLI Execution Safety
 
 - All cloud CLI commands are executed using Python's `subprocess.run()` with **argument lists** (never `shell=True`).
-- A clean environment is constructed for each CLI call, containing only the necessary credential variables.
+- A restricted environment is constructed for each CLI call by stripping application secrets (database URL, encryption keys, etc.) from the process environment.
 - Each command has a configurable **timeout** (default: 120 seconds) to prevent hanging.
 
 ### Change Password
